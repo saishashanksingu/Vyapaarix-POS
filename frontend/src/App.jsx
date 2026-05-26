@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Paper, Tabs, Tab } from "@mui/material";
+import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Paper, Tabs, Tab, Box } from "@mui/material";
 
+import logo from "./assets/vyaaparix-logo.jpg";
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
@@ -11,12 +12,92 @@ import Login from "./pages/Login";
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#f59e0b',
+      dark: '#d97706',
+      light: '#fde68a',
+      contrastText: '#111827'
     },
     secondary: {
-      main: '#dc004e',
+      main: '#111827',
+      contrastText: '#ffffff'
     },
+    background: {
+      default: '#fff7ed',
+      paper: '#ffffff'
+    },
+    text: {
+      primary: '#111827',
+      secondary: '#374151'
+    }
   },
+  typography: {
+    fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    button: {
+      textTransform: 'none'
+    }
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          background: 'linear-gradient(90deg, #f59e0b 0%, #ea580c 100%)',
+          color: '#111827',
+          minHeight: 120,
+          paddingTop: 12,
+          paddingBottom: 12,
+          boxShadow: '0 14px 40px rgba(0, 0, 0, 0.18)'
+        }
+      }
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#ffffff',
+          border: '1px solid rgba(15, 23, 42, 0.06)',
+          boxShadow: '0 18px 60px rgba(15, 23, 42, 0.05)'
+        }
+      }
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 700,
+          color: '#374151',
+          '&.Mui-selected': {
+            color: '#111827'
+          }
+        }
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#fffbf2',
+          border: '1px solid rgba(245, 158, 11, 0.16)'
+        }
+      }
+    },
+    MuiButton: {
+      styleOverrides: {
+        containedPrimary: {
+          backgroundColor: '#f59e0b',
+          color: '#111827',
+          '&:hover': {
+            backgroundColor: '#d97706'
+          }
+        },
+        outlined: {
+          borderColor: '#f59e0b',
+          color: '#111827',
+          '&:hover': {
+            borderColor: '#d97706',
+            backgroundColor: '#fff4db'
+          }
+        }
+      }
+    }
+  }
 });
 
 function App(){
@@ -58,23 +139,30 @@ function App(){
   return(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Vyaaparix POS
-          </Typography>
-          <Typography variant="body1" sx={{ mr: 2 }}>
-            Welcome, {user.name} ({user.role})
-          </Typography>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
+      <AppBar position="static" color="primary" elevation={0}>
+        <Toolbar sx={{ minHeight: { xs: 104, md: 120 }, gap: 2, px: { xs: 2, md: 4 }, justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box component="img" src={logo} alt="Vyaaparix logo" sx={{ width: { xs: 100, sm: 120, md: 144 }, height: 'auto' }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body1" sx={{ color: 'secondary.contrastText', fontWeight: 500 }}>
+              Welcome, {user.name} ({user.role})
+            </Typography>
+            <Button variant="contained" color="secondary" onClick={handleLogout} sx={{ boxShadow: '0 10px 22px rgba(0,0,0,0.12)' }}>
+              Logout
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Paper sx={{ p: 2 }}>
-          <Tabs value={activeTab} onChange={(e, newTab) => setActiveTab(newTab)} centered>
+      <Container maxWidth={false} sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 2, md: 3 } }}>
+        <Paper sx={{ p: 2, width: "100%", maxWidth: "1440px", mx: "auto", borderRadius: 4, boxShadow: '0 24px 80px rgba(15, 23, 42, 0.08)', border: '1px solid rgba(15, 23, 42, 0.06)' }}>
+          <Tabs
+            value={activeTab}
+            onChange={(e, newTab) => setActiveTab(newTab)}
+            centered
+            textColor="secondary"
+            indicatorColor="secondary"
+            sx={{ borderBottom: '1px solid rgba(15, 23, 42, 0.08)', mb: 2 }}
+          >
             <Tab label="POS" value="pos" />
             {isAdmin && <Tab label="Products" value="products" />}
             {isAdmin && <Tab label="Dashboard" value="dashboard" />}

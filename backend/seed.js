@@ -4,6 +4,7 @@ const User = require('./models/User');
 const Product = require('./models/Product');
 const Sale = require('./models/Sale');
 const bcrypt = require('bcryptjs');
+const { roundMoney } = require('./utils/units');
 
 const seedData = async () => {
   await connectDB();
@@ -34,23 +35,35 @@ const seedData = async () => {
 
   // Sample Products
   const products = [
-    { name: 'Milk 1L', barcode: '1234567890123', price: 50, stockQuantity: 100 },
-    { name: 'Bread', barcode: '2345678901234', price: 30, stockQuantity: 50 },
-    { name: 'Eggs 6pc', barcode: '3456789012345', price: 80, stockQuantity: 20 },
-    { name: 'Rice 5kg', barcode: '4567890123456', price: 300, stockQuantity: 10 },
-    { name: 'Apple 1kg', barcode: '5678901234567', price: 150, stockQuantity: 30 },
+    { name: 'Milk 1L', barcode: '1234567890123', price: 50, stockQuantity: 100, unit: 'liter' },
+    { name: 'Bread', barcode: '2345678901234', price: 30, stockQuantity: 50, unit: 'piece' },
+    { name: 'Eggs 6pc', barcode: '3456789012345', price: 80, stockQuantity: 20, unit: 'box' },
+    { name: 'Rice 5kg', barcode: '4567890123456', price: 300, stockQuantity: 10, unit: 'kg' },
+    { name: 'Apple', barcode: '5678901234567', price: 80, stockQuantity: 25.5, unit: 'kg' },
+    { name: 'Tomatoes', barcode: '6789012345678', price: 40, stockQuantity: 15.2, unit: 'kg' },
+    { name: 'Cooking Oil 500ml', barcode: '7890123456789', price: 120, stockQuantity: 30.5, unit: 'liter' },
+    { name: 'Sugar', barcode: '8901234567890', price: 45, stockQuantity: 20.75, unit: 'kg' }
   ];
-  await Product.insertMany(products);
-  console.log('✅ 5 products seeded');
+  const insertedProducts = await Product.insertMany(products);
+  console.log('✅ 8 products seeded');
 
   // Sample Sale
-  const saleItems = products.slice(0, 3).map(p => ({
-    productId: p._id,
-    name: p.name,
-    quantity: 2,
-    price: p.price
-  }));
-  await Sale.create({ items: saleItems, totalAmount: 260 }); // 50*2 + 30*2 + 80*2 = 260
+  const saleItems = insertedProducts.slice(0, 3).map(p => {
+    const quantity = ['piece', 'box', 'pack'].includes(p.unit) ? 2 : 1.5;
+    const lineTotal = roundMoney(p.price * quantity);
+    return {
+      productId: p._id,
+      name: p.name,
+      quantity,
+      unit: p.unit || 'piece',
+      price: p.price,
+      lineTotal
+    };
+  });
+  await Sale.create({
+    items: saleItems,
+    totalAmount: saleItems.reduce((sum, item) => roundMoney(sum + item.lineTotal), 0)
+  });
   console.log('✅ Sample sales seeded');
 
   console.log('🎉 Seeding complete! Login with admin@supermarket.com / admin123');

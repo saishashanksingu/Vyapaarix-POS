@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
+import { formatQuantity } from "../utils/units";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -22,6 +23,7 @@ import {
     Alert
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
+import { TrendingUp, ShoppingCart, WarningAmber, Star } from "@mui/icons-material";
 
 ChartJS.register(
     CategoryScale,
@@ -100,137 +102,392 @@ function Dashboard() {
             {
                 label: "Daily Revenue",
                 data: dailySales.map((d) => d.totalRevenue),
-                backgroundColor: "rgba(25, 118, 210, 0.6)",
+                backgroundColor: "rgba(25, 118, 210, 0.7)",
+                borderColor: "rgba(25, 118, 210, 1)",
+                borderRadius: 8,
+                borderSkipped: false,
             },
         ],
     };
-
 
     const monthNames = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     ];
 
-    // Ensure months are sorted by month number before plotting
     const sortedMonthlySales = [...monthlySales].sort((a, b) => Number(a._id) - Number(b._id));
 
-    // charts for monthly data analytics
     const monthlyChartData = {
         labels: sortedMonthlySales.map(s => monthNames[(Number(s._id) || 1) - 1] || `Month ${s._id}`),
         datasets: [
             {
-                label: "Sales (Rs)",
+                label: "Sales (₹)",
                 data: sortedMonthlySales.map(s => s.totalSales),
-                backgroundColor: "rgba(75, 192, 192, 0.6)"
+                backgroundColor: "rgba(75, 192, 192, 0.7)",
+                borderColor: "rgba(75, 192, 192, 1)",
+                borderRadius: 8,
+                borderSkipped: false,
             }
         ]
     };
 
+    // Reusable StatCard component for summary metrics
+    const StatCard = ({ title, value, icon: Icon, color, prefix = "" }) => (
+        <Card
+            sx={{
+                height: "100%",
+                background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+                border: `1px solid ${color}30`,
+                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+                },
+            }}
+        >
+            <CardContent sx={{ pb: 3 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+                    <Box>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "#666",
+                                fontWeight: 500,
+                                mb: 1,
+                                fontSize: { xs: "0.875rem", sm: "1rem" }
+                            }}
+                        >
+                            {title}
+                        </Typography>
+                        <Typography
+                            variant="h4"
+                            sx={{
+                                fontWeight: 700,
+                                color: color,
+                                fontSize: { xs: "1.75rem", sm: "2.125rem" }
+                            }}
+                        >
+                            {prefix}{value || 0}
+                        </Typography>
+                    </Box>
+                    <Icon sx={{ fontSize: { xs: 32, sm: 40 }, color, opacity: 0.8 }} />
+                </Box>
+            </CardContent>
+        </Card>
+    );
+
     return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>
-                Admin Dashboard
-            </Typography>
+        <Box sx={{ backgroundColor: "#f8f9fa", minHeight: "100vh", py: { xs: 2, sm: 3, md: 4 }, width: "100%" }}>
+            <Box sx={{ width: "100%", maxWidth: "1400px", px: { xs: 1, sm: 2, md: 3 }, mx: "auto" }}>
+                {/* Header */}
+                <Box sx={{ mb: { xs: 3, md: 4 } }}>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: 700,
+                            color: "#1a1a1a",
+                            mb: 1,
+                            fontSize: { xs: "1.75rem", sm: "2rem", md: "2.5rem" }
+                        }}
+                    >
+                        📊 Admin Dashboard
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#999" }}>
+                        Welcome back! Here's your business overview.
+                    </Typography>
+                </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-            <Grid container spacing={3}>
-                {/* Summary Cards */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" color="primary">
-                                Total Sales
-                            </Typography>
-                            <Typography variant="h4">
-                                {summary.totalSales || 0}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" color="primary">
-                                Total Revenue
-                            </Typography>
-                            <Typography variant="h4">
-                                ₹{summary.totalRevenue || 0}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Daily Sales Chart */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Daily Sales Revenue
-                            </Typography>
-                            <Bar data={chartData} options={{ responsive: true, scales: { y: { beginAtZero: true } } }} />
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Monthly Sales Chart */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Monthly Sales
-                            </Typography>
-                            <Bar data={monthlyChartData} />
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Top Selling Products */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Top Selling Products
-                            </Typography>
-                            <List>
-                                {topProducts.map((p, index) => (
-                                    <ListItem key={index}>
-                                        <ListItemText primary={p._id} />
-                                        <Chip label={`Sold: ${p.totalSold}`} color="primary" size="small" />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </CardContent>
-                    </Card>
+                {/* KPI Cards - Summary Metrics */}
+                <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
+                    <Grid item xs={12} sm={6} md={6} lg={3}>
+                        <StatCard
+                            title="Total Sales"
+                            value={summary.totalSales || 0}
+                            icon={ShoppingCart}
+                            color="#1976d2"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6} lg={3}>
+                        <StatCard
+                            title="Total Revenue"
+                            value={summary.totalRevenue || 0}
+                            icon={TrendingUp}
+                            color="#2e7d32"
+                            prefix="₹"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6} lg={3}>
+                        <StatCard
+                            title="Low Stock Items"
+                            value={lowStock.length || 0}
+                            icon={WarningAmber}
+                            color="#f57c00"
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={6} lg={3}>
+                        <StatCard
+                            title="Top Products"
+                            value={topProducts.length || 0}
+                            icon={Star}
+                            color="#d32f2f"
+                        />
+                    </Grid>
                 </Grid>
 
-                {/* Low Stock Alerts */}
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6" gutterBottom>
-                                Low Stock Alerts
-                            </Typography>
-                            {lowStock.length === 0 ? (
-                                <Typography>No low stock products</Typography>
-                            ) : (
-                                <List>
-                                    {lowStock.map((p) => (
-                                        <ListItem key={p._id}>
-                                            <ListItemText primary={p.name} />
-                                            <Chip
-                                                label={`${p.stockQuantity} left`}
-                                                color="warning"
-                                                size="small"
-                                            />
-                                        </ListItem>
-                                    ))}
-                                </List>
-                            )}
-                        </CardContent>
-                    </Card>
+                {/* Charts Section */}
+                <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
+                    {/* Daily Sales Chart */}
+                    <Grid item xs={12} lg={6}>
+                        <Card
+                            sx={{
+                                height: "100%",
+                                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+                                }
+                            }}
+                        >
+                            <CardContent sx={{ pb: 2 }}>
+                                <Typography
+                                    variant="h6"
+                                    gutterBottom
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: 3,
+                                        fontSize: { xs: "1rem", sm: "1.1rem" }
+                                    }}
+                                >
+                                    📈 Daily Sales Revenue
+                                </Typography>
+                                <Box sx={{ minHeight: { xs: "250px", sm: "300px" }, position: "relative" }}>
+                                    <Bar
+                                        data={chartData}
+                                        options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            scales: {
+                                                y: {
+                                                    beginAtZero: true,
+                                                    grid: { color: "rgba(0,0,0,0.05)" }
+                                                },
+                                                x: {
+                                                    grid: { display: false }
+                                                }
+                                            },
+                                            plugins: {
+                                                legend: {
+                                                    display: true,
+                                                    position: "bottom"
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* Monthly Sales Chart */}
+                    <Grid item xs={12} lg={6}>
+                        <Card
+                            sx={{
+                                height: "100%",
+                                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+                                }
+                            }}
+                        >
+                            <CardContent sx={{ pb: 2 }}>
+                                <Typography
+                                    variant="h6"
+                                    gutterBottom
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: 3,
+                                        fontSize: { xs: "1rem", sm: "1.1rem" }
+                                    }}
+                                >
+                                    📊 Monthly Sales Trends
+                                </Typography>
+                                <Box sx={{ minHeight: { xs: "250px", sm: "300px" }, position: "relative" }}>
+                                    <Bar
+                                        data={monthlyChartData}
+                                        options={{
+                                            responsive: true,
+                                            maintainAspectRatio: false,
+                                            scales: {
+                                                y: {
+                                                    beginAtZero: true,
+                                                    grid: { color: "rgba(0,0,0,0.05)" }
+                                                },
+                                                x: {
+                                                    grid: { display: false }
+                                                }
+                                            },
+                                            plugins: {
+                                                legend: {
+                                                    display: true,
+                                                    position: "bottom"
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
                 </Grid>
-            </Grid>
+
+                {/* Bottom Section: Top Products & Low Stock Alerts */}
+                <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
+                    {/* Top Selling Products */}
+                    <Grid item xs={12} md={6}>
+                        <Card
+                            sx={{
+                                height: "100%",
+                                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+                                }
+                            }}
+                        >
+                            <CardContent>
+                                <Typography
+                                    variant="h6"
+                                    gutterBottom
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: 2,
+                                        fontSize: { xs: "1rem", sm: "1.1rem" }
+                                    }}
+                                >
+                                    ⭐ Top Selling Products
+                                </Typography>
+                                {topProducts.length === 0 ? (
+                                    <Typography variant="body2" sx={{ color: "#999" }}>
+                                        No sales data yet
+                                    </Typography>
+                                ) : (
+                                    <List sx={{ p: 0 }}>
+                                        {topProducts.map((p, index) => (
+                                            <ListItem
+                                                key={index}
+                                                sx={{
+                                                    px: 0,
+                                                    py: 1.5,
+                                                    borderBottom: "1px solid #eee",
+                                                    "&:last-child": { borderBottom: "none" }
+                                                }}
+                                            >
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography sx={{ fontWeight: 600, color: "#1a1a1a" }}>
+                                                            {p.name || p._id}
+                                                        </Typography>
+                                                    }
+                                                    secondary={
+                                                        <Typography variant="caption" sx={{ color: "#999" }}>
+                                                            Sold quantity
+                                                        </Typography>
+                                                    }
+                                                />
+                                                <Chip
+                                                    label={`${formatQuantity(p.totalSold, p.unit)} sold`}
+                                                    color="primary"
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 700,
+                                                        backgroundColor: "#e3f2fd",
+                                                        color: "#1976d2"
+                                                    }}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+
+                    {/* Low Stock Alerts */}
+                    <Grid item xs={12} md={6}>
+                        <Card
+                            sx={{
+                                height: "100%",
+                                boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+                                }
+                            }}
+                        >
+                            <CardContent>
+                                <Typography
+                                    variant="h6"
+                                    gutterBottom
+                                    sx={{
+                                        fontWeight: 700,
+                                        mb: 2,
+                                        fontSize: { xs: "1rem", sm: "1.1rem" }
+                                    }}
+                                >
+                                    ⚠️ Low Stock Alerts
+                                </Typography>
+                                {lowStock.length === 0 ? (
+                                    <Alert severity="success">
+                                        ✓ All products are in healthy stock levels
+                                    </Alert>
+                                ) : (
+                                    <List sx={{ p: 0 }}>
+                                        {lowStock.map((p) => (
+                                            <ListItem
+                                                key={p._id}
+                                                sx={{
+                                                    px: 0,
+                                                    py: 1.5,
+                                                    borderBottom: "1px solid #ffebee",
+                                                    "&:last-child": { borderBottom: "none" },
+                                                    backgroundColor: "#fffbfe"
+                                                }}
+                                            >
+                                                <ListItemText
+                                                    primary={
+                                                        <Typography sx={{ fontWeight: 600, color: "#1a1a1a" }}>
+                                                            {p.name}
+                                                        </Typography>
+                                                    }
+                                                    secondary={
+                                                        <Typography variant="caption" sx={{ color: "#999" }}>
+                                                            Quantity remaining
+                                                        </Typography>
+                                                    }
+                                                />
+                                                <Chip
+                                                    label={`${formatQuantity(p.stockQuantity, p.unit)} left`}
+                                                    color="warning"
+                                                    size="small"
+                                                    sx={{
+                                                        fontWeight: 700,
+                                                        backgroundColor: "#fff3e0",
+                                                        color: "#f57c00"
+                                                    }}
+                                                />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </Box>
         </Box>
     );
 }

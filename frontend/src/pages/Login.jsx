@@ -1,6 +1,7 @@
 import { useState } from "react";
 import API from "../services/api";
 import Register from "./Register";
+import logo from "../assets/vyaaparix-logo.jpg";
 import { Card, CardContent, TextField, Button, Typography, Box, Alert } from "@mui/material";
 
 function Login({ setUser }) {
@@ -40,17 +41,20 @@ function Login({ setUser }) {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        backgroundColor: '#f5f5f5',
+        background: 'linear-gradient(180deg, #ffedd5 0%, #fef3c7 100%)',
         padding: 2
       }}
     >
-      <Card sx={{ maxWidth: 400, width: '100%' }}>
-        <CardContent sx={{ padding: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom align="center">
-            Supermarket POS
-          </Typography>
-          <Typography variant="h6" component="h2" gutterBottom align="center" color="text.secondary">
+      <Card sx={{ maxWidth: 420, width: '100%', borderRadius: 4, boxShadow: '0 24px 80px rgba(15, 23, 42, 0.1)', border: '1px solid rgba(245, 158, 11, 0.16)' }}>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+            <Box component="img" src={logo} alt="Brand logo" sx={{ width: 140, height: 'auto' }} />
+          </Box>
+          <Typography variant="h5" component="h1" gutterBottom align="center" sx={{ fontWeight: 700, color: '#111827' }}>
             Login
+          </Typography>
+          <Typography variant="subtitle1" component="h2" gutterBottom align="center" sx={{ color: '#6b7280', mb: 4 }}>
+            Access your dashboard securely
           </Typography>
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -71,6 +75,7 @@ function Login({ setUser }) {
             type="password"
             value={password}
             onChange={(e)=>setPassword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
             margin="normal"
             required
           />

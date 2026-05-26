@@ -22,8 +22,19 @@ exports.getTopProducts=async(req,res)=>{
             {$unwind:"$items"},
             {
                 $group:{
-                    _id:"$items.name",
+                    _id:{
+                        name:"$items.name",
+                        unit:"$items.unit"
+                    },
                     totalSold:{$sum:"$items.quantity"}
+                }
+            },
+            {
+                $project:{
+                    _id:0,
+                    name:"$_id.name",
+                    unit:"$_id.unit",
+                    totalSold:1
                 }
             },
             {$sort:{totalSold:-1}},
@@ -69,8 +80,18 @@ exports.getTopSellingProducts=async(req,res)=>{
             {$unwind:"$items"},
             {
                 $group:{
-                    _id:"$items.productId",
+                    _id:{
+                        productId:"$items.productId",
+                        unit:"$items.unit"
+                    },
                     totalSold:{$sum:"$items.quantity"}
+                }
+            },
+            {
+                $project:{
+                    _id:"$_id.productId",
+                    unit:"$_id.unit",
+                    totalSold:1
                 }
             },
             {

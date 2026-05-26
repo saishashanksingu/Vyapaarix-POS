@@ -37,44 +37,48 @@ function SalesHistory() {
     }
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>
-                Sales History
-            </Typography>
+        <Box sx={{ p: 3, width: "100%", backgroundColor: "#f8f9fb" }}>
+            <Box sx={{ width: "100%", maxWidth: "1400px", mx: "auto", px: { xs: 1, sm: 2, md: 3 } }}>
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, mb: 2 }}>
+                    Sales History
+                </Typography>
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Sale ID</TableCell>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Total Amount</TableCell>
-                            <TableCell>Actions</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {sales.map((sale) => (
-                            <TableRow key={sale._id}>
-                                <TableCell>{sale._id}</TableCell>
-                                <TableCell>
-                                    {new Date(sale.createdAt).toLocaleString()}
-                                </TableCell>
-                                <TableCell>
-                                    <Chip label={`₹${sale.totalAmount}`} color="primary" />
-                                </TableCell>
-                                <TableCell>
-                                    <Button
-                                        variant="outlined"
-                                        onClick={() => setSelectedSale(sale._id)}
-                                    >
-                                        View Receipt
-                                    </Button>
-                                </TableCell>
+                <TableContainer component={Paper} sx={{ overflowX: "auto", width: "100%", boxShadow: '0 16px 40px rgba(15, 23, 42, 0.08)' }}>
+                    <Table sx={{ minWidth: 0, width: "100%" }}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Sale ID</TableCell>
+                                <TableCell>Date</TableCell>
+                                <TableCell>Total Amount</TableCell>
+                                <TableCell>Actions</TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                            {sales.map((sale) => (
+                                <TableRow key={sale._id}>
+                                    <TableCell>{sale._id}</TableCell>
+                                    <TableCell>
+                                        {new Date(sale.createdAt).toLocaleString()}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip label={`Rs.${Number(sale.totalAmount || 0).toFixed(2)}`} color="primary" />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            onClick={() => setSelectedSale(sale._id)}
+                                            sx={{ textTransform: 'none', backgroundColor: '#f59e0b', '&:hover': { backgroundColor: '#d97706' } }}
+                                        >
+                                            View Receipt
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
         </Box>
     );
 }

@@ -1,28 +1,84 @@
 const Sale=require("../models/Sale");
 const Product=require("../models/Product");
 const PDFDocument=require("pdfkit");
+const {
+    UNIT_LABELS,
+    normalizeQuantity,
+    validateQuantityForUnit,
+    roundMoney
+}=require("../utils/units");
 
 exports.createSale=async(req,res)=>{
     try{
         const{items}=req.body;
+        if(!Array.isArray(items) || items.length === 0){
+            return res.status(400).json({message:"Sale must include at least one item"});
+        }
+
         let total=0;
+        const saleItems=[];
+        const stockUpdates=[];
+
         for(let item of items){
+            const quantity=normalizeQuantity(item.quantity);
+            if(!item.productId){
+                return res.status(400).json({message:"Product id is required for every item"});
+            }
+
             const product=await Product.findById(item.productId);
             if(!product){
                 return res.status(404).json({message:"Product not found"});
             }
-            if(product.stockQuantity<item.quantity){
-                return res.status(400).json({message:"Insufficient stock"});
+
+            const quantityError=validateQuantityForUnit(quantity, product.unit);
+            if(quantityError){
+                return res.status(400).json({message:`${product.name}: ${quantityError}`});
+            }
+
+            if(product.stockQuantity<quantity){
+                return res.status(400).json({message:`Insufficient stock for ${product.name}`});
 
             }
-            product.stockQuantity-=item.quantity;
-            await product.save();
 
-            total+=item.price*item.quantity;
+            const lineTotal=roundMoney(product.price*quantity);
+            total=roundMoney(total+lineTotal);
+            saleItems.push({
+                productId:product._id,
+                name:product.name,
+                quantity,
+                unit:product.unit,
+                price:product.price,
+                lineTotal
+            });
+            stockUpdates.push({productId:product._id, quantity});
+        }
+
+        const completedUpdates=[];
+        for(const update of stockUpdates){
+            const updatedProduct=await Product.findOneAndUpdate(
+                {
+                    _id:update.productId,
+                    stockQuantity:{$gte:update.quantity}
+                },
+                {
+                    $inc:{stockQuantity:-update.quantity}
+                },
+                {new:true}
+            );
+
+            if(!updatedProduct){
+                for(const completed of completedUpdates){
+                    await Product.findByIdAndUpdate(completed.productId,{
+                        $inc:{stockQuantity:completed.quantity}
+                    });
+                }
+                return res.status(400).json({message:"Insufficient stock. Please refresh inventory and try again."});
+            }
+            completedUpdates.push(update);
         }
 
         const sale=new Sale({
-            items,
+            items:saleItems,
             totalAmount:total
         });
         await sale.save();
@@ -46,7 +102,9 @@ exports.getReceipt=async(req,res)=>{
             name:item.name,
             price:item.price,
             quantity:item.quantity,
-            total:item.price*item.quantity
+            unit:item.unit,
+            unitLabel:UNIT_LABELS[item.unit] || item.unit,
+            total:item.lineTotal || roundMoney(item.price*item.quantity)
         }));
 
         res.json({
@@ -88,8 +146,9 @@ exports.downloadReceipt=async(req,res)=>{
         doc.moveDown();
 
         sale.items.forEach((item)=>{
+            const unitLabel=UNIT_LABELS[item.unit] || item.unit || "unit";
             doc.text(
-                `Product ID: ${item.productId} | Qty: ${item.quantity} | Price: ${item.price}`
+                `${item.name} | Qty: ${item.quantity} ${unitLabel} | Rate: Rs.${item.price}/${unitLabel} | Total: Rs.${item.lineTotal || roundMoney(item.price*item.quantity)}`
             );
         });
 

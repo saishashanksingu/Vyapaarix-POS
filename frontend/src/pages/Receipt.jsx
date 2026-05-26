@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import API from "../services/api";
+import { formatQuantity, formatRate } from "../utils/units";
 import {
     Typography,
     Card,
@@ -83,9 +84,9 @@ function Receipt({ saleId }) {
                                 {receipt.items.map((item, index) => (
                                     <TableRow key={index}>
                                         <TableCell>{item.name}</TableCell>
-                                        <TableCell align="right">₹{item.price}</TableCell>
-                                        <TableCell align="right">{item.quantity}</TableCell>
-                                        <TableCell align="right">₹{item.total}</TableCell>
+                                        <TableCell align="right">{formatRate(item.price, item.unit)}</TableCell>
+                                        <TableCell align="right">{formatQuantity(item.quantity, item.unit)}</TableCell>
+                                        <TableCell align="right">Rs.{Number(item.total || 0).toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -95,7 +96,7 @@ function Receipt({ saleId }) {
                     <Divider sx={{ my: 2 }} />
 
                     <Typography variant="h6" align="right">
-                        Total: ₹{receipt.totalAmount}
+                        Total: Rs.{Number(receipt.totalAmount || 0).toFixed(2)}
                     </Typography>
 
                     <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
