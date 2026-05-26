@@ -11,8 +11,6 @@ const authRoutes=require("./routes/authRoutes");
 
 const app=express();
 
-connectDB();
-
 app.use(cors({
   origin: (origin, cb) => {
     // Allow same-origin/non-browser tools (no Origin header)
@@ -45,13 +43,25 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+const ensureDatabase = async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(503).json({
+      message: "Database connection unavailable",
+      error: error.message,
+    });
+  }
+};
+
 // Public routes
-app.use("/api/auth",authRoutes);
+app.use("/api/auth", ensureDatabase, authRoutes);
 
 // Protected routes
-app.use("/api/products", authMiddleware, productRoutes);
-app.use("/api/sales", authMiddleware, salesRoutes);
-app.use("/api/analytics", authMiddleware, analyticsRoutes);
+app.use("/api/products", ensureDatabase, authMiddleware, productRoutes);
+app.use("/api/sales", ensureDatabase, authMiddleware, salesRoutes);
+app.use("/api/analytics", ensureDatabase, authMiddleware, analyticsRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
