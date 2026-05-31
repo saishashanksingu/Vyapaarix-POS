@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Paper, Tabs, Tab, Box } from "@mui/material";
 
 import logo from "./assets/vyaaparix-logo.jpg";
+import API from "./services/api";
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
@@ -111,16 +112,44 @@ function App(){
       return null;
     }
   });
+  const [store,setStore] = useState(() => {
+    const savedStore = localStorage.getItem("store");
+    if (!savedStore) return null;
+    try {
+      return JSON.parse(savedStore);
+    } catch {
+      return null;
+    }
+  });
   const [activeTab, setActiveTab] = useState('pos');
   const role = String(user?.role || "").toLowerCase();
   const isAdmin = role === "admin";
   const canViewSales = isAdmin || role === "cashier";
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (store?.cashierInviteCode) return;
+
+    API.get("/auth/cashier-invite")
+      .then((res) => {
+        const nextStore = {
+          _id: res.data.storeId,
+          name: res.data.storeName,
+          cashierInviteCode: res.data.cashierInviteCode
+        };
+        setStore(nextStore);
+        localStorage.setItem("store", JSON.stringify(nextStore));
+      })
+      .catch((error) => console.error("Failed to load cashier invite:", error));
+  }, [isAdmin, store?.cashierInviteCode]);
+
   // logout function
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("store");
     setUser(null);
+    setStore(null);
   };
 
   // if not logged in → show login page
@@ -131,7 +160,7 @@ function App(){
         <Login setUser={(u)=>{
           setUser(u);
           localStorage.setItem("user", JSON.stringify(u));
-        }} />
+        }} setStore={setStore} />
       </ThemeProvider>
     );
   }
@@ -144,8 +173,13 @@ function App(){
           <Box component="img" src={logo} alt="Vyaaparix logo" sx={{ width: { xs: 100, sm: 120, md: 144 }, height: 'auto' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="body1" sx={{ color: 'secondary.contrastText', fontWeight: 500 }}>
-              Welcome, {user.name} ({user.role})
+              {store?.name ? `${store.name} - ` : ""}Welcome, {user.name} ({user.role})
             </Typography>
+            {isAdmin && store?.cashierInviteCode && (
+              <Typography variant="body2" sx={{ color: 'secondary.contrastText', fontWeight: 700 }}>
+                Cashier invite: {store.cashierInviteCode}
+              </Typography>
+            )}
             <Button variant="contained" color="secondary" onClick={handleLogout} sx={{ boxShadow: '0 10px 22px rgba(0,0,0,0.12)' }}>
               Logout
             </Button>

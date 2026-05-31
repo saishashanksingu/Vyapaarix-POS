@@ -41,6 +41,16 @@ const saleSchema=new mongoose.Schema({
         required:true,
         min:0
     },
+    store:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Store",
+        required:true,
+        index:true
+    },
+    cashier:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User"
+    },
     createdAt:{
         type:Date,
         default:Date.now

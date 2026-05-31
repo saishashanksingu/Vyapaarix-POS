@@ -25,7 +25,10 @@ exports.createSale=async(req,res)=>{
                 return res.status(400).json({message:"Product id is required for every item"});
             }
 
-            const product=await Product.findById(item.productId);
+            const product=await Product.findOne({
+                _id:item.productId,
+                store:req.user.store
+            });
             if(!product){
                 return res.status(404).json({message:"Product not found"});
             }
@@ -58,6 +61,7 @@ exports.createSale=async(req,res)=>{
             const updatedProduct=await Product.findOneAndUpdate(
                 {
                     _id:update.productId,
+                    store:req.user.store,
                     stockQuantity:{$gte:update.quantity}
                 },
                 {
@@ -68,9 +72,10 @@ exports.createSale=async(req,res)=>{
 
             if(!updatedProduct){
                 for(const completed of completedUpdates){
-                    await Product.findByIdAndUpdate(completed.productId,{
-                        $inc:{stockQuantity:completed.quantity}
-                    });
+                    await Product.findOneAndUpdate(
+                        {_id:completed.productId, store:req.user.store},
+                        {$inc:{stockQuantity:completed.quantity}}
+                    );
                 }
                 return res.status(400).json({message:"Insufficient stock. Please refresh inventory and try again."});
             }
@@ -79,7 +84,9 @@ exports.createSale=async(req,res)=>{
 
         const sale=new Sale({
             items:saleItems,
-            totalAmount:total
+            totalAmount:total,
+            store:req.user.store,
+            cashier:req.user._id
         });
         await sale.save();
 
@@ -94,7 +101,10 @@ exports.createSale=async(req,res)=>{
 
 exports.getReceipt=async(req,res)=>{
     try{
-        const sale=await Sale.findById(req.params.id);
+        const sale=await Sale.findOne({
+            _id:req.params.id,
+            store:req.user.store
+        });
         if(!sale){
             return res.status(404).json({message:"Sale not found"});
         }
@@ -121,7 +131,10 @@ exports.getReceipt=async(req,res)=>{
 
 exports.downloadReceipt=async(req,res)=>{
     try{
-        const sale= await Sale.findById(req.params.id);
+        const sale= await Sale.findOne({
+            _id:req.params.id,
+            store:req.user.store
+        });
 
         if(!sale){
             return res.status(404).json({message:"Sale not found"});
@@ -163,7 +176,7 @@ exports.downloadReceipt=async(req,res)=>{
 
 exports.getAllSales=async(req,res)=>{
     try{
-        const sales=await Sale.find().sort({createdAt:-1});
+        const sales=await Sale.find({store:req.user.store}).sort({createdAt:-1});
         res.json(sales);
     }catch(error){
         res.status(500).json({

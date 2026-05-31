@@ -22,6 +22,16 @@ const userSchema=new mongoose.Schema({
         enum:["Admin","Cashier"],
         required:true,
         default:"Cashier"
+    },
+
+    store:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Store"
+    },
+
+    createdBy:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User"
     }
 
 });

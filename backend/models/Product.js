@@ -10,8 +10,7 @@ const ProductSchema=new mongoose.Schema({
     barcode:{
         type:String,
         required:true,
-        trim:true,
-        unique:true
+        trim:true
     },
     price:{
         type:Number,
@@ -33,7 +32,15 @@ const ProductSchema=new mongoose.Schema({
         type:Number,
         default:10,
         min:0
+    },
+    store:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"Store",
+        required:true,
+        index:true
     }
 });
+
+ProductSchema.index({store:1, barcode:1}, {unique:true});
 
 module.exports=mongoose.model("Product",ProductSchema);

@@ -16,6 +16,10 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: 'Token is not valid' });
     }
 
+    if (!user.store) {
+      return res.status(403).json({ message: 'User is not assigned to a store' });
+    }
+
     req.user = user;
     next();
   } catch (error) {

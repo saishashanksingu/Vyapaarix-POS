@@ -2,7 +2,7 @@ const Sale=require("../models/Sale");
 
 exports.getTotalSales=async(req,res)=>{
     try{
-        const sales=await Sale.find();
+        const sales=await Sale.find({store:req.user.store});
         let totalRevenue=0;
         sales.forEach((sale)=>{
             totalRevenue+=sale.totalAmount;
@@ -19,6 +19,7 @@ exports.getTotalSales=async(req,res)=>{
 exports.getTopProducts=async(req,res)=>{
     try{
         const topProducts=await Sale.aggregate([
+            {$match:{store:req.user.store}},
             {$unwind:"$items"},
             {
                 $group:{
@@ -54,6 +55,7 @@ exports.getDailySales=async(req,res)=>{
         const sales = await Sale.aggregate([
             {
                 $match: {
+                    store:req.user.store,
                     createdAt: { $gte: sevenDaysAgo }
                 }
             },
@@ -77,6 +79,7 @@ exports.getDailySales=async(req,res)=>{
 exports.getTopSellingProducts=async(req,res)=>{
     try{
         const topProducts=await Sale.aggregate([
+            {$match:{store:req.user.store}},
             {$unwind:"$items"},
             {
                 $group:{
@@ -109,6 +112,7 @@ exports.getTopSellingProducts=async(req,res)=>{
 exports.getMonthlySales=async(req, res)=>{
     try{
         const sales = await Sale.aggregate([
+            {$match:{store:req.user.store}},
             {
                 $group: {
                     _id: { $month: "$createdAt" },

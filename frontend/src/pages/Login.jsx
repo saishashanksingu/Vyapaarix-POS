@@ -4,7 +4,7 @@ import Register from "./Register";
 import logo from "../assets/vyaaparix-logo.jpg";
 import { Card, CardContent, TextField, Button, Typography, Box, Alert } from "@mui/material";
 
-function Login({ setUser }) {
+function Login({ setUser, setStore }) {
 
   const [email,setEmail] = useState("");
   const [password,setPassword] = useState("");
@@ -21,6 +21,10 @@ function Login({ setUser }) {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      if (res.data.store) {
+        localStorage.setItem("store", JSON.stringify(res.data.store));
+        setStore?.(res.data.store);
+      }
 
       setUser(res.data.user);
 
@@ -31,7 +35,7 @@ function Login({ setUser }) {
 
   // show register page
   if(showRegister){
-    return <Register setUser={setUser} setShowRegister={setShowRegister} />;
+    return <Register setUser={setUser} setStore={setStore} setShowRegister={setShowRegister} />;
   }
 
   return (

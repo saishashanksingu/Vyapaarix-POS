@@ -1,6 +1,7 @@
 require('dotenv').config();
 const connectDB = require('./config/db');
 const User = require('./models/User');
+const Store = require('./models/Store');
 const Product = require('./models/Product');
 const Sale = require('./models/Sale');
 const bcrypt = require('bcryptjs');
@@ -11,8 +12,14 @@ const seedData = async () => {
 
   // Clear existing data
   await User.deleteMany();
+  await Store.deleteMany();
   await Product.deleteMany();
   await Sale.deleteMany();
+
+  const store = await Store.create({
+    name: 'Demo Supermarket',
+    cashierInviteCode: 'DEMO2026'
+  });
 
   // Sample Admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -20,8 +27,11 @@ const seedData = async () => {
     name: 'Admin User',
     email: 'admin@supermarket.com',
     password: hashedPassword,
-    role: 'Admin'
+    role: 'Admin',
+    store: store._id
   });
+  store.owner = admin._id;
+  await store.save();
   console.log('✅ Admin created: admin@supermarket.com / admin123');
 
   // Sample Cashier
@@ -30,7 +40,9 @@ const seedData = async () => {
     name: 'Cashier User',
     email: 'cashier@supermarket.com',
     password: hashedCashier,
-    role: 'Cashier'
+    role: 'Cashier',
+    store: store._id,
+    createdBy: admin._id
   });
 
   // Sample Products
@@ -44,7 +56,10 @@ const seedData = async () => {
     { name: 'Cooking Oil 500ml', barcode: '7890123456789', price: 120, stockQuantity: 30.5, unit: 'liter' },
     { name: 'Sugar', barcode: '8901234567890', price: 45, stockQuantity: 20.75, unit: 'kg' }
   ];
-  const insertedProducts = await Product.insertMany(products);
+  const insertedProducts = await Product.insertMany(products.map((product) => ({
+    ...product,
+    store: store._id
+  })));
   console.log('✅ 8 products seeded');
 
   // Sample Sale
@@ -62,11 +77,14 @@ const seedData = async () => {
   });
   await Sale.create({
     items: saleItems,
-    totalAmount: saleItems.reduce((sum, item) => roundMoney(sum + item.lineTotal), 0)
+    totalAmount: saleItems.reduce((sum, item) => roundMoney(sum + item.lineTotal), 0),
+    store: store._id,
+    cashier: admin._id
   });
   console.log('✅ Sample sales seeded');
 
   console.log('🎉 Seeding complete! Login with admin@supermarket.com / admin123');
+  console.log('Cashier invite code: DEMO2026');
   process.exit(0);
 };
 

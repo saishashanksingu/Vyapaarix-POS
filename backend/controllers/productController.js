@@ -37,7 +37,7 @@ const validateProductPayload=(payload)=>{
 
 exports.getProducts=async(req,res)=>{
     try{
-        const products=await Product.find();
+        const products=await Product.find({store:req.user.store});
         res.json(products);
     }catch(error){
         res.status(500).json({message:error.message});
@@ -52,7 +52,10 @@ exports.addProduct=async(req,res)=>{
             return res.status(400).json({message:validationError});
         }
 
-        const product=new Product(payload);
+        const product=new Product({
+            ...payload,
+            store:req.user.store
+        });
         const savedProduct=await product.save();
         res.json(savedProduct);
     }catch(error){
@@ -67,6 +70,7 @@ exports.searchProducts=async(req,res)=>{
     try{
         const keyword=req.query.name;
         const products=await Product.find({
+            store:req.user.store,
             name:{$regex:keyword,$options:"i"}
         });
         res.json(products);
@@ -78,6 +82,7 @@ exports.searchProducts=async(req,res)=>{
 exports.getLowStockProducts=async(req,res)=>{
     try{
         const lowStockProducts=await Product.find({
+            store:req.user.store,
             $expr:{$lte:["$stockQuantity","$reorderLevel"]}
         });
         res.json(lowStockProducts);
@@ -97,9 +102,9 @@ exports.updateProduct=async(req,res)=>{
             return res.status(400).json({message:validationError});
         }
         
-        const product=await Product.findByIdAndUpdate(
-            id,
-            payload,
+        const product=await Product.findOneAndUpdate(
+            {_id:id, store:req.user.store},
+            {...payload, store:req.user.store},
             {new:true,runValidators:true}
         );
         
@@ -120,7 +125,10 @@ exports.updateProduct=async(req,res)=>{
 exports.deleteProduct=async(req,res)=>{
     try{
         console.log("Deleting product with id:", req.params.id);
-        const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+        const deletedProduct = await Product.findOneAndDelete({
+            _id:req.params.id,
+            store:req.user.store
+        });
         if (!deletedProduct) {
             return res.status(404).json({message:"Product not found"});
         }
@@ -135,6 +143,7 @@ exports.getProductByBarcode=async(req,res)=>{
     console.log('GET /api/products/barcode/:barcode called with', req.params.barcode);
     try{
         const product=await Product.findOne({
+            store:req.user.store,
             barcode:req.params.barcode
         });
 
