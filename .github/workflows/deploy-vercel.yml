@@ -23,16 +23,23 @@ jobs:
           NODE_ENV: production
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
+          : "${VERCEL_TOKEN:?VERCEL_TOKEN secret is required}"
+          : "${VERCEL_PROJECT_ID:?VERCEL_PROJECT_ID secret is required}"
+          : "${VERCEL_ORG_ID:?VERCEL_ORG_ID secret is required}"
+          : "${MONGODB_URI:?MONGODB_URI secret is required}"
+          : "${JWT_SECRET:?JWT_SECRET secret is required}"
+
           # Deploy the full stack (including backend API and frontend)
           vercel --prod \
-            --token $VERCEL_TOKEN \
-            --env MONGODB_URI=$MONGODB_URI \
-            --env NODE_ENV=production \
-            --env JWT_SECRET=$JWT_SECRET
+            --yes \
+            --token "$VERCEL_TOKEN" \
+            --env "MONGODB_URI=$MONGODB_URI" \
+            --env "NODE_ENV=production" \
+            --env "JWT_SECRET=$JWT_SECRET"
 
       - name: Deployment Success
         run: |
-          echo "✅ Full stack deployed to Vercel"
+          echo "Full stack deployed to Vercel"
           echo "Frontend: https://vyapaarix-pos.vercel.app"
           echo "API: https://vyapaarix-pos.vercel.app/api"
           echo "Dashboard: https://vercel.com/dashboard"
