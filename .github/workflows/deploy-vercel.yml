@@ -14,15 +14,25 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
       
-      - name: Deploy Frontend to Vercel
+      - name: Deploy Full Stack to Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NODE_ENV: production
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: |
-          vercel --cwd ./frontend --prod --token $VERCEL_TOKEN
+          # Deploy the full stack (including backend API and frontend)
+          vercel --prod \
+            --token $VERCEL_TOKEN \
+            --env MONGODB_URI=$MONGODB_URI \
+            --env NODE_ENV=production \
+            --env JWT_SECRET=$JWT_SECRET
 
-      - name: Notify Deployment
+      - name: Deployment Success
         run: |
-          echo "✅ Frontend deployed to Vercel"
-          echo "View deployment at: https://vercel.com/dashboard"
+          echo "✅ Full stack deployed to Vercel"
+          echo "Frontend: https://vyapaarix-pos.vercel.app"
+          echo "API: https://vyapaarix-pos.vercel.app/api"
+          echo "Dashboard: https://vercel.com/dashboard"
