@@ -11,6 +11,11 @@ const authRoutes=require("./routes/authRoutes");
 
 const app=express();
 
+// Log environment on startup
+console.log("🚀 Starting Supermarket Backend Server...");
+console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Port: ${process.env.PORT || 5000}`);
+
 app.use(cors({
   origin: (origin, cb) => {
     // Allow same-origin/non-browser tools (no Origin header)
@@ -40,6 +45,7 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     environment: process.env.NODE_ENV || "development",
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -48,6 +54,7 @@ const ensureDatabase = async (req, res, next) => {
     await connectDB();
     next();
   } catch (error) {
+    console.error("Database connection error:", error.message);
     res.status(503).json({
       message: "Database connection unavailable",
       error: error.message,
@@ -65,8 +72,8 @@ app.use("/api/analytics", ensureDatabase, authMiddleware, analyticsRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
+  console.error("Server error:", err.stack);
+  res.status(500).json({ message: 'Something went wrong!', error: err.message });
 });
 
 // 404 handler
@@ -77,8 +84,9 @@ app.use((req, res) => {
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`✅ Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`MongoDB: ${process.env.DATABASE_URL ? 'Railway Plugin' : (process.env.MONGODB_URI ? 'Custom URI' : 'Local')}`);
   });
 }
 
