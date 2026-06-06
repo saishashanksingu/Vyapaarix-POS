@@ -2,7 +2,7 @@
 
 /**
  * Supermarket SaaS - Automated Deployment Setup
- * This script automates the entire deployment process
+ * Supports both local MongoDB development and cloud deployment
  */
 
 const fs = require('fs');
@@ -20,22 +20,20 @@ const question = (prompt) => new Promise(resolve => {
 });
 
 async function main() {
-  console.log('\n🚀 Supermarket SaaS - Automated Deployment Setup\n');
+  console.log('\n🚀 Supermarket SaaS - Setup & Deployment\n');
   console.log('═'.repeat(60));
 
   try {
-    // Step 1: Gather credentials
-    console.log('\n📝 Step 1: Gathering Information\n');
+    // Step 0: Ask deployment mode
+    console.log('\n🎯 Step 0: Choose Your Setup\n');
+    console.log('1. Local Development (MongoDB locally + Compass)');
+    console.log('2. Production Deployment (Cloud MongoDB + Railway + Vercel)');
+    console.log('3. Both (Local dev + Production deploy)\n');
     
-    const mongoDbUri = await question('MongoDB URI (from MongoDB Atlas): ');
-    const railwayToken = await question('Railway API Token (from railway.app settings): ');
-    const vercelToken = await question('Vercel Token (from vercel.com settings): ');
-    const gitHubUsername = await question('GitHub Username: ');
-    
-    console.log('\n✅ Credentials gathered!\n');
+    const mode = await question('Enter choice (1-3): ');
 
-    // Step 2: Validate connectivity
-    console.log('📋 Step 2: Validating Setup\n');
+    // Step 1: Validate connectivity
+    console.log('\n📋 Validating Environment\n');
     
     try {
       execSync('git status', { stdio: 'ignore' });
@@ -52,113 +50,133 @@ async function main() {
       throw new Error('Node.js or npm not installed');
     }
 
-    // Step 3: Create environment files
-    console.log('\n⚙️ Step 3: Creating Environment Configuration\n');
-    
-    const backendEnv = `MONGODB_URI=${mongoDbUri}
+    // LOCAL DEVELOPMENT SETUP
+    if (mode === '1' || mode === '3') {
+      console.log('\n⚙️ Step 1: Setting Up Local Development\n');
+      
+      // Check if MongoDB is installed
+      try {
+        execSync('mongod --version', { stdio: 'ignore' });
+        console.log('  ✓ MongoDB installed locally');
+      } catch {
+        console.log('  ⚠️ MongoDB not found. Installation options:');
+        console.log('     1. Download from: https://www.mongodb.com/try/download/community');
+        console.log('     2. Or use Docker: docker-compose up');
+        console.log('  See MONGODB_LOCAL_SETUP.md for details');
+      }
+
+      // Create backend .env for local development
+      const backendEnvLocal = `MONGODB_URI=mongodb://localhost:27017/supermarket
+PORT=5000
+NODE_ENV=development
+JWT_SECRET=dev-secret-key-12345`;
+      
+      fs.writeFileSync(path.join(__dirname, 'backend/.env'), backendEnvLocal);
+      console.log('  ✓ Backend .env created (local MongoDB)');
+
+      // Create frontend .env for local development
+      const frontendEnvLocal = `VITE_API_BASE_URL=http://localhost:5000/api`;
+      fs.writeFileSync(path.join(__dirname, 'frontend/.env.local'), frontendEnvLocal);
+      console.log('  ✓ Frontend .env.local created');
+
+      console.log('\n✅ Local Development Ready!\n');
+      console.log('Start development:');
+      console.log('  Terminal 1: cd backend && npm start');
+      console.log('  Terminal 2: cd frontend && npm run dev');
+      console.log('  Terminal 3: Open MongoDB Compass (mongodb://localhost:27017)\n');
+      console.log('Visit: http://localhost:5173\n');
+
+      if (mode === '1') {
+        // Local only - done
+        console.log('See: LOCAL_DEVELOPMENT_QUICK_START.md for details');
+        rl.close();
+        process.exit(0);
+      }
+    }
+
+    // PRODUCTION DEPLOYMENT SETUP
+    if (mode === '2' || mode === '3') {
+      console.log('\n🌐 Step 2: Setting Up Production Deployment\n');
+      
+      const mongoDbUri = await question('MongoDB Atlas URI (from MongoDB Atlas → Connect → Drivers): ');
+      const railwayToken = await question('Railway API Token (from railway.app → Account → API Tokens): ');
+      const vercelToken = await question('Vercel Token (from vercel.com → Settings → Tokens): ');
+      const gitHubUsername = await question('GitHub Username: ');
+      
+      console.log('\n✅ Production Credentials Collected!\n');
+
+      // Create backend .env.production
+      const backendEnvProd = `MONGODB_URI=${mongoDbUri}
 PORT=5000
 NODE_ENV=production
-ALLOWED_ORIGINS=https://${gitHubUsername}.vercel.app`;
-    
-    fs.writeFileSync(path.join(__dirname, '../backend/.env'), backendEnv);
-    console.log('  ✓ Backend .env created');
+ALLOWED_ORIGINS=https://*.vercel.app`;
+      
+      fs.writeFileSync(path.join(__dirname, 'backend/.env.production'), backendEnvProd);
+      console.log('  ✓ Backend .env.production created');
 
-    const frontendEnv = `VITE_API_BASE_URL=https://your-railway-url/api`;
-    fs.writeFileSync(path.join(__dirname, '../frontend/.env'), frontendEnv);
-    console.log('  ✓ Frontend .env created');
+      // Create frontend .env for production
+      console.log('\n  ℹ️ Open Railway dashboard...');
+      console.log('  Instructions:');
+      console.log('  1. Go to: https://railway.app/dashboard');
+      console.log('  2. Create a new project from GitHub');
+      console.log('  3. Select your supermarket-saas repository');
+      console.log('  4. Add MONGODB_URI environment variable');
+      console.log('  5. Complete deployment and copy your URL\n');
 
-    // Step 4: Deploy to Railway
-    console.log('\n🚂 Step 4: Deploying to Railway\n');
-    console.log('  ℹ️ Opening Railway dashboard...');
-    console.log('  Instructions:');
-    console.log('  1. Go to: https://railway.app/dashboard');
-    console.log('  2. Create a new project from GitHub');
-    console.log('  3. Select your supermarket-saas repository');
-    console.log('  4. Add MONGODB_URI environment variable from: ' + mongoDbUri);
-    console.log('  5. Copy your deployment URL');
-    console.log('  6. Paste it here when ready...\n');
+      const railwayUrl = await question('Railway Backend URL (e.g., https://supermarket-backend.up.railway.app): ');
 
-    const railwayUrl = await question('Railway Backend URL (e.g., https://supermarket-backend-production.up.railway.app): ');
+      const frontendEnvProd = `VITE_API_BASE_URL=${railwayUrl}/api`;
+      fs.writeFileSync(path.join(__dirname, 'frontend/.env.production'), frontendEnvProd);
+      console.log('  ✓ Frontend .env.production created');
 
-    // Step 5: Update frontend with backend URL
-    console.log('\n🔗 Step 5: Connecting Frontend to Backend\n');
-    
-    const frontendEnvUpdated = `VITE_API_BASE_URL=${railwayUrl}/api`;
-    fs.writeFileSync(path.join(__dirname, '../frontend/.env'), frontendEnvUpdated);
-    console.log('  ✓ Frontend configured to use Railway backend');
+      // Deployment summary
+      const summary = `# Supermarket SaaS - Deployment Summary
 
-    // Step 6: Deploy to Vercel
-    console.log('\n▲ Step 6: Deploying to Vercel\n');
-    console.log('  Instructions:');
-    console.log('  1. Go to: https://vercel.com/new');
-    console.log('  2. Select your supermarket-saas repository');
-    console.log('  3. Root Directory: ./frontend');
-    console.log('  4. Build Command: npm run build');
-    console.log('  5. Output Directory: dist');
-    console.log('  6. Add Environment Variable:');
-    console.log(`     VITE_API_BASE_URL=${railwayUrl}/api`);
-    console.log('  7. Click Deploy');
-    console.log('  8. Paste your deployment URL here...\n');
+## 🎉 Deployment Configuration Ready!
 
-    const vercelUrl = await question('Vercel Frontend URL (e.g., https://supermarket-saas.vercel.app): ');
-
-    // Step 7: Final configuration
-    console.log('\n✨ Step 7: Final Configuration\n');
-
-    // Create deployment summary
-    const summary = `# Supermarket SaaS - Deployment Summary
-
-## 🎉 Deployment Complete!
-
-### Your Live URLs
-- **Frontend**: ${vercelUrl}
+### Your URLs
+- **Frontend**: Vercel (will be assigned after deployment)
 - **Backend**: ${railwayUrl}
+- **Database**: MongoDB Atlas
 
 ### Environment Configuration
-- MongoDB: Connected
-- Railway Backend: Deployed
-- Vercel Frontend: Deployed
-
-### Test Your Application
-1. Visit: ${vercelUrl}
-2. Create an account
-3. Add products
-4. Process sales
-5. Check analytics
-
-### Support
-If you encounter any issues, review:
-- FULL_DEPLOYMENT_GUIDE.md - Complete guide
-- DEPLOYMENT_INSTRUCTIONS.md - Detailed steps
-- Troubleshooting section in deployment guides
+- MongoDB: Configured (Atlas)
+- Railway: Backend deployed
+- Vercel: Ready for frontend
 
 ### Next Steps
-1. Share your Vercel URL with users
-2. Monitor deployments on Railway and Vercel dashboards
-3. Update CORS if you add custom domains
-4. Scale up when needed
+1. Deploy frontend on Vercel
+2. Add VITE_API_BASE_URL: ${railwayUrl}/api
+3. Test your live application
+4. Monitor on Railway and Vercel dashboards
 
-Happy selling! 🎉
+### Credentials Saved
+- Railway URL: ${railwayUrl}
+- MongoDB: Connected via Atlas
+
+See FULL_DEPLOYMENT_GUIDE.md for detailed instructions.
 `;
 
-    fs.writeFileSync(path.join(__dirname, '../DEPLOYMENT_SUMMARY.md'), summary);
-    console.log('  ✓ Deployment summary created');
-
-    // Create .env.local for local testing
-    const localEnv = `VITE_API_BASE_URL=${railwayUrl}/api`;
-    fs.writeFileSync(path.join(__dirname, '../frontend/.env.local'), localEnv);
-    console.log('  ✓ Local development environment configured');
+      fs.writeFileSync(path.join(__dirname, 'DEPLOYMENT_SUMMARY.md'), summary);
+      console.log('\n✅ Production Setup Complete!\n');
+      console.log('Deployment Summary saved to: DEPLOYMENT_SUMMARY.md\n');
+      
+      console.log('Next steps:');
+      console.log('1. Deploy frontend on Vercel: https://vercel.com/new');
+      console.log('2. Select your supermarket-saas repository');
+      console.log('3. Set environment variable: VITE_API_BASE_URL=' + railwayUrl + '/api');
+      console.log('4. Deploy and get your live URL\n');
+    }
 
     rl.close();
 
-    console.log('\n' + '═'.repeat(60));
-    console.log('\n✅ DEPLOYMENT COMPLETE!\n');
-    console.log(`🌐 Your app is live at: ${vercelUrl}\n`);
-    console.log('Next steps:');
-    console.log(`1. Visit: ${vercelUrl}`);
-    console.log('2. Register and test the application');
-    console.log('3. Share the URL with your users');
-    console.log('4. Monitor on Railway and Vercel dashboards\n');
+    console.log('═'.repeat(60));
+    console.log('\n✅ SETUP COMPLETE!\n');
+    console.log('Documentation:');
+    console.log('  • LOCAL_DEVELOPMENT_QUICK_START.md - Quick start guide');
+    console.log('  • MONGODB_LOCAL_SETUP.md - Local MongoDB setup');
+    console.log('  • FULL_DEPLOYMENT_GUIDE.md - Production deployment');
+    console.log('  • README.md - Overview\n');
 
     process.exit(0);
 
