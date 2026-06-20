@@ -6,5 +6,6 @@ router.get("/top-products",analyticsController.getTopProducts);
 router.get("/daily-report",analyticsController.getDailySales);
 router.get("/top-products",analyticsController.getTopSellingProducts);
 router.get("/monthly-sales",analyticsController.getMonthlySales);
+router.post("/assistant",analyticsController.aiAssistant);
 
 module.exports=router;

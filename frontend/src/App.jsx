@@ -10,6 +10,7 @@ import Products from "./pages/Products";
 import SalesHistory from "./pages/SalesHistory";
 import Login from "./pages/Login";
 import Cashiers from "./pages/Cashiers";
+import AICopilot from "./pages/AICopilot";
 
 const theme = createTheme({
   palette: {
@@ -244,12 +245,14 @@ function App(){
             {isAdmin && <Tab label="Products" value="products" />}
             {isAdmin && <Tab label="Dashboard" value="dashboard" />}
             {isAdmin && <Tab label="Cashiers" value="cashiers" />}
+            {isAdmin && <Tab label="AI Copilot" value="ai" />}
             {canViewSales && <Tab label="Sales History" value="sales" />}
           </Tabs>
           {activeTab === 'pos' && <POS />}
           {activeTab === 'products' && <Products />}
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'cashiers' && <Cashiers />}
+          {activeTab === 'ai' && <AICopilot />}
           {activeTab === 'sales' && <SalesHistory />}
         </Paper>
       </Container>
