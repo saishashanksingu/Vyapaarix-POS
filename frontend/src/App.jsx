@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Paper, Tabs, Tab, Box } from "@mui/material";
+import { CssBaseline, AppBar, Toolbar, Typography, Button, Container, Paper, Tabs, Tab, Box, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Alert } from "@mui/material";
 
 import logo from "./assets/vyaaparix-logo.jpg";
 import API from "./services/api";
@@ -9,6 +9,7 @@ import POS from "./pages/POS";
 import Products from "./pages/Products";
 import SalesHistory from "./pages/SalesHistory";
 import Login from "./pages/Login";
+import Cashiers from "./pages/Cashiers";
 
 const theme = createTheme({
   palette: {
@@ -122,6 +123,45 @@ function App(){
     }
   });
   const [activeTab, setActiveTab] = useState('pos');
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwdError, setPwdError] = useState("");
+  const [pwdSuccess, setPwdSuccess] = useState("");
+  const [pwdLoading, setPwdLoading] = useState(false);
+
+  const handleChangePassword = async () => {
+      if (newPassword !== confirmPassword) {
+          setPwdError("New passwords do not match");
+          return;
+      }
+      if (newPassword.length < 6) {
+          setPwdError("Password must be at least 6 characters long");
+          return;
+      }
+      try {
+          setPwdLoading(true);
+          setPwdError("");
+          setPwdSuccess("");
+          await API.post("/auth/change-password", {
+              currentPassword,
+              newPassword
+          });
+          setPwdSuccess("Password updated successfully!");
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+          setTimeout(() => {
+              setChangePasswordOpen(false);
+              setPwdSuccess("");
+          }, 1500);
+      } catch (error) {
+          setPwdError(error.response?.data?.message || "Failed to update password");
+      } finally {
+          setPwdLoading(false);
+      }
+  };
   const role = String(user?.role || "").toLowerCase();
   const isAdmin = role === "admin";
   const canViewSales = isAdmin || role === "cashier";
@@ -180,6 +220,9 @@ function App(){
                 Cashier invite: {store.cashierInviteCode}
               </Typography>
             )}
+            <Button variant="outlined" color="inherit" onClick={() => setChangePasswordOpen(true)} sx={{ color: 'secondary.contrastText', borderColor: 'secondary.contrastText', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+              Change Password
+            </Button>
             <Button variant="contained" color="secondary" onClick={handleLogout} sx={{ boxShadow: '0 10px 22px rgba(0,0,0,0.12)' }}>
               Logout
             </Button>
@@ -200,14 +243,73 @@ function App(){
             <Tab label="POS" value="pos" />
             {isAdmin && <Tab label="Products" value="products" />}
             {isAdmin && <Tab label="Dashboard" value="dashboard" />}
+            {isAdmin && <Tab label="Cashiers" value="cashiers" />}
             {canViewSales && <Tab label="Sales History" value="sales" />}
           </Tabs>
           {activeTab === 'pos' && <POS />}
           {activeTab === 'products' && <Products />}
           {activeTab === 'dashboard' && <Dashboard />}
+          {activeTab === 'cashiers' && <Cashiers />}
           {activeTab === 'sales' && <SalesHistory />}
         </Paper>
       </Container>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 4, p: 1 }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Change Password</DialogTitle>
+        <DialogContent>
+          {pwdError && <Alert severity="error" sx={{ mb: 2 }}>{pwdError}</Alert>}
+          {pwdSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pwdSuccess}</Alert>}
+          
+          <TextField
+            margin="dense"
+            label="Current Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            disabled={pwdLoading}
+          />
+          <TextField
+            margin="dense"
+            label="New Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={pwdLoading}
+          />
+          <TextField
+            margin="dense"
+            label="Confirm New Password"
+            type="password"
+            fullWidth
+            variant="outlined"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleChangePassword()}
+            disabled={pwdLoading}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setChangePasswordOpen(false)} disabled={pwdLoading}>
+            Cancel
+          </Button>
+          <Button onClick={handleChangePassword} variant="contained" disabled={pwdLoading}>
+            {pwdLoading ? "Updating..." : "Update Password"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 }
