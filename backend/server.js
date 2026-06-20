@@ -1,36 +1,33 @@
-require('dotenv').config();
-const connectDB=require("./config/db");
-const express=require("express");
-const cors=require("cors");
-const authMiddleware = require('./middleware/auth');
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
-const productRoutes=require("./routes/productRoutes");
-const salesRoutes=require("./routes/salesRoutes");
-const analyticsRoutes=require("./routes/analyticsRoutes");
-const authRoutes=require("./routes/authRoutes");
+const connectDB = require("./config/db");
+const express = require("express");
+const cors = require("cors");
+const authMiddleware = require("./middleware/auth");
 
-const app=express();
+const productRoutes = require("./routes/productRoutes");
+const salesRoutes = require("./routes/salesRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const authRoutes = require("./routes/authRoutes");
 
-// Log environment on startup
-console.log("🚀 Starting Supermarket Backend Server...");
-console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+const app = express();
+
+console.log("Starting Supermarket Backend Server...");
+console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 console.log(`Port: ${process.env.PORT || 5000}`);
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow same-origin/non-browser tools (no Origin header)
     if (!origin) return cb(null, true);
 
-    // Allow local dev servers (Vite may shift ports)
     if (/^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
     if (/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) return cb(null, true);
 
-    // Allow Vercel deployed apps
-    if (origin && origin.includes('vercel.app')) return cb(null, true);
-    
-    // Allow production domains (add your domain here)
+    if (origin.includes("vercel.app")) return cb(null, true);
+
     if (process.env.ALLOWED_ORIGINS) {
-      const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
+      const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",").map((value) => value.trim());
       if (allowedOrigins.includes(origin)) return cb(null, true);
     }
 
@@ -62,31 +59,27 @@ const ensureDatabase = async (req, res, next) => {
   }
 };
 
-// Public routes
 app.use("/api/auth", ensureDatabase, authRoutes);
 
-// Protected routes
 app.use("/api/products", ensureDatabase, authMiddleware, productRoutes);
 app.use("/api/sales", ensureDatabase, authMiddleware, salesRoutes);
 app.use("/api/analytics", ensureDatabase, authMiddleware, analyticsRoutes);
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error("Server error:", err.stack);
-  res.status(500).json({ message: 'Something went wrong!', error: err.message });
+  res.status(500).json({ message: "Something went wrong!", error: err.message });
 });
 
-// 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
+  res.status(404).json({ message: "Route not found" });
 });
 
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`MongoDB: ${process.env.DATABASE_URL ? 'Railway Plugin' : (process.env.MONGODB_URI ? 'Custom URI' : 'Local')}`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(`MongoDB: ${process.env.DATABASE_URL ? "Railway Plugin" : (process.env.MONGODB_URI ? "Custom URI" : "Local")}`);
   });
 }
 
