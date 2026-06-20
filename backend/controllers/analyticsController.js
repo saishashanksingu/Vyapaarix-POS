@@ -206,7 +206,7 @@ Response JSON:
 User Question: "${question}"
 Return ONLY the JSON. Do not include markdown code block formatting.`;
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
         // Step 1: Call Gemini to generate the aggregation pipeline
         const response1 = await fetch(geminiUrl, {
