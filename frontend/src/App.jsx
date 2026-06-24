@@ -103,9 +103,9 @@ const theme = createTheme({
   }
 });
 
-function App(){
+function App() {
 
-  const [user,setUser] = useState(() => {
+  const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
     if (!savedUser) return null;
     try {
@@ -114,7 +114,7 @@ function App(){
       return null;
     }
   });
-  const [store,setStore] = useState(() => {
+  const [store, setStore] = useState(() => {
     const savedStore = localStorage.getItem("store");
     if (!savedStore) return null;
     try {
@@ -133,35 +133,35 @@ function App(){
   const [pwdLoading, setPwdLoading] = useState(false);
 
   const handleChangePassword = async () => {
-      if (newPassword !== confirmPassword) {
-          setPwdError("New passwords do not match");
-          return;
-      }
-      if (newPassword.length < 6) {
-          setPwdError("Password must be at least 6 characters long");
-          return;
-      }
-      try {
-          setPwdLoading(true);
-          setPwdError("");
-          setPwdSuccess("");
-          await API.post("/auth/change-password", {
-              currentPassword,
-              newPassword
-          });
-          setPwdSuccess("Password updated successfully!");
-          setCurrentPassword("");
-          setNewPassword("");
-          setConfirmPassword("");
-          setTimeout(() => {
-              setChangePasswordOpen(false);
-              setPwdSuccess("");
-          }, 1500);
-      } catch (error) {
-          setPwdError(error.response?.data?.message || "Failed to update password");
-      } finally {
-          setPwdLoading(false);
-      }
+    if (newPassword !== confirmPassword) {
+      setPwdError("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPwdError("Password must be at least 6 characters long");
+      return;
+    }
+    try {
+      setPwdLoading(true);
+      setPwdError("");
+      setPwdSuccess("");
+      await API.post("/auth/change-password", {
+        currentPassword,
+        newPassword
+      });
+      setPwdSuccess("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => {
+        setChangePasswordOpen(false);
+        setPwdSuccess("");
+      }, 1500);
+    } catch (error) {
+      setPwdError(error.response?.data?.message || "Failed to update password");
+    } finally {
+      setPwdLoading(false);
+    }
   };
   const role = String(user?.role || "").toLowerCase();
   const isAdmin = role === "admin";
@@ -194,11 +194,11 @@ function App(){
   };
 
   // if not logged in → show login page
-  if(!user){
+  if (!user) {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Login setUser={(u)=>{
+        <Login setUser={(u) => {
           setUser(u);
           localStorage.setItem("user", JSON.stringify(u));
         }} setStore={setStore} />
@@ -206,7 +206,7 @@ function App(){
     );
   }
 
-  return(
+  return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AppBar position="static" color="primary" elevation={0}>
@@ -271,7 +271,7 @@ function App(){
         <DialogContent>
           {pwdError && <Alert severity="error" sx={{ mb: 2 }}>{pwdError}</Alert>}
           {pwdSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pwdSuccess}</Alert>}
-          
+
           <TextField
             margin="dense"
             label="Current Password"
