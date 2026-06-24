@@ -205,9 +205,10 @@ The database schemas are:
 Rules:
 - The store ID for the current store is "${storeId}".
 - The very first stage of your pipeline MUST be a $match stage matching the current store: { "store": "${storeId}" }. Write "${storeId}" simply as a string in your JSON pipeline.
-- Return a JSON object with two fields:
+- Return a JSON object with three fields:
   - "collection": "Sale", "Product", "User", or "General" (use "General" if the question is a general conversational query, retail advice, or recommendation that does not require database querying).
   - "pipeline": an array representing the MongoDB aggregation pipeline stages (empty array [] for "General").
+  - "answer": (ONLY for "General" collection) A professional, highly informative, and easy-to-read response answering the manager's question directly with expert retail advice. Use structured markdown tables, bullet points, bold key metrics, and an actionable, warm tone. Leave this field empty or omit it if the collection is "Sale", "Product", or "User".
 - If you need to match user.store or product.store, also match the string "${storeId}".
 - Ensure the pipeline only performs read-only aggregates.
 
@@ -277,11 +278,12 @@ Response JSON:
   ]
 }
 
-Example 6: "what are best new add on product suggestions for our store" (General recommendation query)
+Example 6: "what are best new add on product suggestions for our store" (General recommendation query with direct answer)
 Response JSON:
 {
   "collection": "General",
-  "pipeline": []
+  "pipeline": [],
+  "answer": "Hello! Promoting the right add-on products is key to increasing basket size. Here are some top suggestions:\n\n### **Top Add-On Suggestions**\n| Category | Specific Items | Why it works |\n| :--- | :--- | :--- |\n| **Impulse Buys** | Premium chocolates, pocket hand sanitizers, unique mints | High margin, placed near registers. |\n| **Healthy Grab & Go** | Protein bars, kombucha, nut mixes | Health-conscious shoppers buy these on the go. |\n| **Eco-Kitchen** | Reusable bags, beeswax wraps | Appeals to green-minded customers. |"
 }
 
 User Question: "${question}"
@@ -299,6 +301,12 @@ Return ONLY the JSON. Do not include markdown code block formatting.`;
             })
         });
 
+        if (response1.status !== 200) {
+            const errData = await response1.json().catch(() => ({}));
+            console.error("Gemini API Step 1 error:", response1.status, errData);
+            throw new Error(`Gemini API Step 1 returned status ${response1.status}: ${errData.error?.message || JSON.stringify(errData)}`);
+        }
+
         const data1 = await response1.json();
         const generatedText = data1.candidates?.[0]?.content?.parts?.[0]?.text;
         
@@ -314,11 +322,13 @@ Return ONLY the JSON. Do not include markdown code block formatting.`;
 
         let collection = "General";
         let pipeline = [];
+        let directAnswer = null;
 
         try {
             const parsed = JSON.parse(cleanedText);
             collection = parsed.collection || "General";
             pipeline = parsed.pipeline || [];
+            directAnswer = parsed.answer || null;
         } catch (parseError) {
             // If the response is not valid JSON, treat it as a direct conversational explanation from Gemini
             console.log("Gemini returned a non-JSON response, using directly as the answer.");
@@ -329,6 +339,16 @@ Return ONLY the JSON. Do not include markdown code block formatting.`;
             });
         }
         
+        // If it's a general query and Gemini already formulated a direct answer, return it immediately!
+        // This cuts response time in half and avoids a redundant second API call.
+        if (collection === "General" && directAnswer) {
+            return res.json({
+                answer: directAnswer,
+                query: { collection, pipeline },
+                rawResult: []
+            });
+        }
+
         let dbResult = [];
 
         if (collection !== "General") {
@@ -395,6 +415,12 @@ Guidelines:
                 contents: [{ parts: [{ text: prompt2 }] }]
             })
         });
+
+        if (response2.status !== 200) {
+            const errData = await response2.json().catch(() => ({}));
+            console.error("Gemini API Step 2 error:", response2.status, errData);
+            throw new Error(`Gemini API Step 2 returned status ${response2.status}: ${errData.error?.message || JSON.stringify(errData)}`);
+        }
 
         const data2 = await response2.json();
         const finalAnswer = data2.candidates?.[0]?.content?.parts?.[0]?.text;
