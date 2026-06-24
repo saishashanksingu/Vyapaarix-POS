@@ -50,7 +50,7 @@ function AICopilot() {
                 ...prev,
                 {
                     sender: "ai",
-                    text: `Error: ${error.response?.data?.message || "Failed to contact AI Copilot. Make sure GEMINI_API_KEY is configured."}`
+                    text: `Error: ${error.response?.data?.error || error.response?.data?.message || "Failed to contact AI Copilot. Make sure GEMINI_API_KEY is configured."}`
                 }
             ]);
         } finally {
