@@ -1,6 +1,7 @@
 # 🚀 Supermarket SaaS - Complete Deployment Ready
 
-> Your entire application is now automated and ready for production deployment!
+> Your entire application is now live !!
+> 🖇️ https://vyapaarix-pos.vercel.app
 
 ---
 
